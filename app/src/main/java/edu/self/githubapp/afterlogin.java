@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -18,6 +21,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class afterlogin extends AppCompatActivity {
+
+    String accesstoken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +38,7 @@ public class afterlogin extends AppCompatActivity {
                 //String stringUri;
                 //stringUri = uri.toString();
                 String code;
+                String accesstoken;
 
                 code = uri.getQueryParameter("code");
                 TextView txtview = (TextView)findViewById(R.id.textview);
@@ -42,6 +48,9 @@ public class afterlogin extends AppCompatActivity {
                 accesstokenreceiver receiver = new accesstokenreceiver(txtview2);
                 receiver.execute(code);
 
+                TextView txtview3 = (TextView)findViewById(R.id.textView5);
+                Eventreceiver eventreceiver = new Eventreceiver(txtview3);
+                eventreceiver.execute();
             }
         }
 
@@ -99,10 +108,74 @@ public class afterlogin extends AppCompatActivity {
         }
 
         public void onPostExecute(String result){
-            _act.setText(result);
+
+            try {
+                JSONObject rootJSON = new JSONObject(result);
+
+                accesstoken = rootJSON.getString("access_token");
+
+            }
+            catch(JSONException ex) {
+            }
+
+            _act.setText(accesstoken);
 
         }
     }
 
+    private class Eventreceiver extends AsyncTask<String, String, String>{
+        private TextView _event;
+        public Eventreceiver(TextView event){
+            _event = event;
+        }
+
+        public String doInBackground(String... params){
+
+
+            /* イベントを入手するためにアクセス*/
+            String urlStr = "https://api.github.com/user?access_token="+accesstoken;
+            String urlStr1 = "https://api.github.com/users/hk10nis/events";
+
+            HttpURLConnection con = null;
+            InputStream is = null;
+            String result = "";
+
+            try{
+                URL url = new URL(urlStr1);
+                con = (HttpURLConnection)url.openConnection();
+                con.setRequestMethod("GET");
+                //con.setRequestProperty("Authorization", "token " +accesstoken);
+                con.connect();
+                is = con.getInputStream();
+                result = IOUtils.toString(is, StandardCharsets.UTF_8);
+
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            finally {
+                if(con != null){
+                    con.disconnect();
+                }
+                if(is != null){
+                    try{
+                        is.close();
+                    }
+                    catch (IOException e){
+
+                    }
+                }
+            }
+            result ="";
+            return result;
+        }
+
+        public void onPostExecute(String result){
+            _event.setText(result);
+
+        }
+    }
 
 }
